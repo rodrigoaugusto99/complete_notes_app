@@ -1,0 +1,477 @@
+Iniciando node - npm init -y pra criar projeto node com pre configuracao basica (-y)
+
+Criar a pasta do projeto, ir la dentro com cd no prompt e dar esse npm init -y
+
+Vms usar express p lidar com requisicoes, é framework web com protocolo http.
+
+Npm install express,
+
+Npm install cria o node modules que cria todos os negocios necessarios de acordo com packagelock json package json
+
+Iniciando com express, parecido com fastify, importa o express, inicializa com express() e  faz o listen com a porta e a funcao
+
+Metodo get, temos request e response, response usamos p enviar com response.send e o request podemos por ex botar uma interpolacao 
+[request.params.id](http://request.params.id/) pra gente printar na tela o id, que no caso é /message/:id, ou seja, o parametro q 
+colocamos la na url vai automatixamente ficar no print
+____________________________________
+
+## Esse route params vms usar o infos simples, tipo id de um produto p exibir infos daquele produto
+
+Outro modo de enviar valores p api p capturar e usar na logica da aplicacao
+O route params sao obrigatorios.
+O query params, nao
+Vms ver como eh o query params
+
+Se  route params tem message/:id/:name,
+A rota so vai funcionar se estiverem mandandos o id e name.
+
+Se falta o name por ex, a rota nao existe
+
+Com query params, a rota continua /message, mas se tiver tipo ?title=titulo&limit=10, ai podemos recuperar essas coisas com o request.query
+
+Npm install nodemon --save-dev (apenas usam em desenvolvimento)
+Isso observa todas as mudancas no codigo e vai reiniciando no automatico
+Ai é só fazer script dev para nodemon ao inves de node(que é o script start padrao)
+Ai teria que mandar npm run dev. N precisa de run no start pq start eh padrao
+
+Com imsonia, podemos criar metodo post e ao inves de colcar a url no navegador, colamos la no imnsonia.
+
+La no imnsonia nois colocamos o corpo da requisicao em formato json. Pra recuperar la no projeto, nao é request params ou query, é request.body.
+N esquecer de dar app.use(express.json()); p aceitar json, pois la no imnsonia fica claro q no corpo pode ter varios formatos, xml etc
+
+Lembra q usamos response.send p responder algo? Dessa vez vms usar respons.json sempre, pois eh o padrao, responder tudo em json tambem
+
+Ai ficaria response.json({ name, email, senha}) ao inves de .send com interpolacoes e `  `
+____________________________________
+estrutura da app - separacao de responsabilidades
+
+src - server.js - inicializar a aplicacao
+
+routes - manter as rotas da aplicacao
+
+rotas especificas de user (/users )
+
+jogar nesse arquivo  e fazer o require(”express”) de novo p pegar o { Router } 
+dele e fazer o userRoutes = Router() e fazer o userRoutes.post
+
+module.exports = userRoutes 
+
+entao vai pra SRC, vai pro server, ve qual eh a rota no routes, e assim vai pro controller especifico
+
+
+-------server.js---------------
+//ao clicar em send, vai pro arquivo server.js
+
+//1 - vai nas rotas - use essas rotas
+app.use(routes)
+
+//como nao tem nada depois do routes, vai carregar por padrao a pasta com nome index.
+//e entao ao ir nas routes, vai la onde ta armazenadas todas as rotas (no index)
+const routes = require("./routes")
+
+-------index.js--------
+const routes = Router()
+//2 - opa, achei o /users, eh ele que esta na url
+//entao me leva pra esse arquivivo aqui (usersRouter)
+routes.use("/users", usersRouter)
+
+------user.routes.js-------
+const usersRouter = Router()
+
+const usersControllers = new UsersControllers()
+
+
+//3 - estou na raiz, nao tem nada mais pra frente depois do /users, entao fica apenas /
+//ai aqui fica, ao inves daquela funcao, fica a chamada da funcao
+//- a rota so vai receber a requisicao e resposta e repassar pro controller equivalente.
+usersRouter.post('/', usersControllers.create)
+
+____________________________________
+UsersControllers
+
+class UsersControllers {
+    /*
+    index - GET para listar varios registros
+    show - GET para exibir um registro especfico
+    create - POST para criar um registro
+    update - PUT para atualizar um registro
+    delete - DELETE para remover um registro
+     */
+    create(request, response){
+        //eh no controller q vamos lidar com o processamento dessas informacoes
+        const { name, email, password} = request.body
+
+        //status code eh opcional, mas se por exemplo esse metodo se referir a uma criacao, 
+        //podemos colocar o padrao de 201. se nao quisermos ou nao soubermos, o padrao fica 200
+        //se for bem sucedido. eh apenas uma informacao a mais na hora da resposta/
+        response.status(201).json({ name, email, password})
+    }
+}
+_____________________________________
+middleware
+
+funcao que intercepta a requisicao, tem acesso a ela antes do destino final, que seria por ex uma funcao de novo produto. 
+tbm tem acesso ao destino.
+middlewares sao funcoes que tem acesso ao objetoi de solicitacao(requisicao), seu conteudoo, tbm o objeto de resposta, consegue devolver respostas se necessario, 
+e tem acesso a proxima funcao no ciclo solicitascao-resposta
+
+podem executar qlqr codigo, podem fazer mudancas nos objetos de solicitacao e resposta, pode encerrar o ciclo de solicitaao-resposta, pode chamar o proximo middleware na pilha
+ex bom eh middleware p verificar se o usuario esta autenticado ou se eh adminsitrador p poder fzr tal solicitacao
+
+ //middleware funcao normal, mas que conseguimos ter acesso a request, response e next
+ function myMiddleware(request, response, next){
+     //podemos fazer logica de verificacao usando dados do request por e exemplo request.body.someBoolean
+     //e se der negativo, ao inves de chamar o next, nois faremos um if com a condicao errada e retornando
+    //com o response uma mensagem personalizada
+    next()
+ }
+ //? quer dizer que o terceiro parametro eh o que chama a proxima funcao?
+ //? quer dizer que eh padrao o post ter um segundo parametro que, se for funcao, o terceiro parametro dessa funcao, n importa o nome, chama aquele controller?
+
+//middlware - antes de chamar essa funcao de criar quando chegar nessa rota, depois de ter chegado no index,
+//temos o middlware myMiddleware
+
+//usersRouter.use(myMiddleware) - podemos fazer assim caso quisermos chamar esse middleware pra todas as rotas de usuario
+//usersRouter.post('/', myMiddleware, usersControllers.create)
+
+
+_____________________________________
+feita a classe AppError
+____________________________________
+
+precisamos la no controller agora, cuidar do erro que foi feito tanto pelo lado do cliente(nao enviou nome, por exemplo), quanto falha
+do servidor(erro de digitacao no arquivo, por exemplo).
+
+npm i express-async-errors --save
+
+chamar o erro no controller e colocar pra throwar numa condicao que satisfaz 
+erro do proprio cleinte.
+
+chamar o erro no server.js:
+
+eh aqui que as coisas sao enviadas pro cliente. entao quando lancarmos uma excecao
+e ao mesmo tempo falar o erro especifico daquele momento, essa excecao vai ser
+capturada aqi pelo app.use e mostrar a mensagem de erro que veio do controller ou
+mostrar outra mensagem caso nao tenha sido erro do cliente.
+
+if(error instanceof AppError){
+        return response.status(error.statusCode).json({
+            status: 'error',
+            message: 'error.message',
+        })
+    }
+
+    console.log(error)
+
+    //se nao foi error do tipo AppError, entao foi um erro que tem nada a ver com cliente, entao
+    //tacamos um 500 com mensagem generica de erro interno
+
+    return response.status(500).json({
+        status: 'error',
+        message: 'Internal server error',
+    })
+____________________________________
+
+configurando imnsonia, variaveis de ambiente pra BASE_URL
+variaveis de ambiente numa pasta por exemplo a pasta de users, 
+fazer a variavel de ambiente RESOURCE, q so pode ser acessada nessa pasta
+
+tudo isso dentro do ambiente de desenvolvimento DEV, var de amb criada
+
+___________________________________________________
+SQLITE.
+npm i sqlite3 sqlite --save -> de producao
+
+arquivo index.js pra quando quiser chamar o sqlite, nao precisar colocar o nome do arquivo,
+pois por padrao o index.js eh procurado
+
+inicialmente n tera banco, entao ao entrar no app, vai ser criado
+
+//esse eh o drive de fato, a versao
+const sqlite3 = require('sqlite3')
+//esse eh pra conectar
+const sqlite = require('sqlite')
+//path p resolver os enderecos de acordo com ambiente
+const path = require('path')
+
+path com dirname:
+/*ao inves de colocar fixo o caminho, que pode dar probblemas caso troque de
+        sistema operacional, faz isso:
+        dirname eh aonde estamos dentro do projeto, 
+        .. p voltar uma pasta pra tras
+        dps o nome do arquivo a ser criado.*/
+
+
+______________\
+server.js
+const database = require('./database/sqlite')
+
+database()
+
+ao rodar, caso nao tenha o banco aidna, vai ser criado la na pasta database o
+arquivo database.db
+
+AGORA O ARQUIVO DO BANCO DE DADOS JA ESTA CRIADO.
+
+____________________________________
+pelo vscode nao conseguimos ver o conteudo do banco. temos que usar um 
+sgbd, servico gerenciador  de banco de dados
+- serve p ver oq tem no banco, incluir ou deletar registro, ver a estrutura
+----------------------------------------
+dentro da pasta database/sqlite, criar pasta migrations, arquivo createUsers.njs
+
+
+const createUsers = `
+CREATE TABLE users(
+    id INTEGER PRIMARY KEY AUTOINCREMENT, (auto incrementada de 1 em 1
+    name VARCHAR,
+    email VARCHAR,
+    password VARCHAR,
+    avatar VARCHAR NULL, pode ser nulo e comeca como nulo
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)`
+
+module.exports = createUsers
+
+trazendo o codigo que fariamos manualmente la no sqlite no beekeeper, pro arquivo js
+
+-criar outro arquivo index.js
+
+const sqliteConnection = require('../../sqlite')
+const createUsers = require('./createUsers')
+
+async function migrationsRun(){
+    const schemas = [
+        createUsers
+    ].join('')
+//join - juntando todas as tabelas com ~nada~
+    sqliteConnection()
+    .then(db => db.exec(schemas))
+    .catch(error => console.error(error))
+}
+
+module.exports = migrationsRun
+
+isso eh pra automatizar o processo de criacao do banco.
+
+//const database = require('./database/sqlite')
+const migrationsRun = require('./database/sqlite/')
+// database()
+migrationsRun()
+
+sao feitos essas alteracoes, e, ao rodar a aplicaco, ao salvar, 
+pois estamos com nodemon, roda aquelas migrations, e se nao tiver
+a tabela, ela sera criada.
+
+______________
+bom, ja temos as rotas, quando entramos na rota users/, eh chamado o create do UsersControllers
+(usersRouter.post('/', usersControllers.create))
+
+nesse arquivo de criacao de user, vamos importar o banco de dados:
+const sqliteConnection = require('../database/sqlite')
+vamos instanciar:
+ const database = await sqliteConnection()
+
+ se comunicando com o banco.
+ como estamos no controller, no metodo create, nois podemos receber o request e response.
+ vamos usar o reques:
+
+ class UsersControllers {
+    async create(request, response){
+        const { name, email, password} = request.body
+
+        const database = await sqliteConnection()
+
+//aqui, estamos vendo se ha um usuario onde o email eh igual ao email do request
+        const checkUserExists = await database.get('SELECT * FROM users WHERE email = (?)', [email])
+    }
+}
+
+//se retornar qualquer registro nesse checkUserExists, quer dizer que ja tem alguem cadastr.
+if(checkUserExists){
+            throw new AppError('Este email ja esta em uso')
+        }
+
+        return response.status(201).json()
+
+___________________________________________________
+
+
+vamos cadastrar o usuario
+await database.run(
+            'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
+             [name, email, password]
+        )
+
+
+ATOS AO DESENVOLVER:
+-fazer esse codigo de no controller com a linguagem sql, se comunicandio
+com o banco sqlite.
+-como eh post e estamos testando, vamos usar o insonia.
+-no imnsonia, colocar la a url localhost:3333/users, conforme 
+especificamos no codigo, que seria o caminho para rodar o UserControler.create
+-la, fazer o json e clicar em send. 
+-ver no beekeeper se deu tudo certo, fazendo SELECT * FROM users, no caso. 
+
+____________________________________
+senha criptografada
+npm i bcryptjs --save
+
+const { hash } = require('bcryptjs')
+//tem que colocar o await pra esperar o hash acontecer.
+//se nao colocar, vai aparecer como um objeto, pois o hash 
+//eh um objeto/promise
+const hashedPassword = await hash(password, 8)
+
+await database.run(
+            'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
+             [name, email, hashedPassword]
+        )
+
+______________
+
+se tentar cadastrar o mesmo email, vai entrar no throw, e como
+la no server.js a gente fez o app.use (error..)
+entao o throw vai enviar a msg de erro
+ if(checkUserExists){
+            throw new AppError('Este email ja esta em uso')
+        }
+
+e la no server.js o bagulho vai capturar esse throw
+if(error instanceof AppError){
+        return response.status(error.statusCode).json({
+            status: 'error',
+            message: error.message,
+        })
+    }
+
+____________________________________
+ao tentar atualizar um dado:
+async update(request, response){
+
+//pega o conteudo do body(que passou pela requisicao)
+//e o conteudo do parametro (o usuario que esta querendo trocar)
+    const { name, email } = request.body
+        const { id } = request.params
+
+
+//pegando os dados do usuario(retorna o objeto do user em json, tds os dados)
+const user = await database.get('SELECT * FROM users WHERE id = (?)', [id])
+
+//verificando se usuario foi encotnrao
+if(!user){
+            throw new AppError('Usuario nao encontrado!!')
+        }
+
+//verificando se existe um usuario com aquele email que veio pelo request.body
+const userWithUpdatedEmail = await database.get('SELECT * FROM users WHERE email = (?)', [email])
+
+//se existir, hm, perigoso, mas pode ser o proprio usuario
+//se existir E o id desse usuario nao for igual ao id do usuario atual,
+//entao realmente eh um email ja usado por outro usuario
+((existe um email igual ao que eu to tentando definir, sendo que o id do dono
+eh diferente do meu, entao eh de outra pessoa msm))
+
+//se nao passar pelos ifs de erro, entao vamos chamar o tal database.run p
+ //fazer o update
+
+user.name = name
+user.email = email
+await database.run(
+    `UPDATE users SET name = ?, email = ?, updated_at = ? WHERE id = ?`, 
+    [user.name, user.email, new Date(), id]
+)
+
+        return response.json()
+
+
+------------------------------------
+-no caso desse app de teste, nois estamos trocando o nome e o email.
+portanto, temos que informar esses dois dados, se nao informar nenhum, 
+por exemplo, eles vao ser alterados para NULL la no banco.
+-tambem nois estamos alterando o usuario colocando o id dele estaticamente la
+no beekeeper. ou seja, sempre estamos alterando os dados do mesmo usuario.
+
+ou seja, estamos apenas testando a funcionalidade do sql e os tratamentos de erros.
+- oque teoricamente esta faltando, seria o id nao ser estatico, ou seja, o usuario
+a ser mexido deve ser de acordo com o usuario autenticado, e nao com um id estatico
+- e tambem no caso estamos obrigando a mudar o nome e email, e teoricamente a gente
+que deveria perguntar ao usuario qual campoo do seu perfil ele quer alterar.
+...
+vamos fazer isso para a senha tambem:
+vamos pegar no request.body um campo chamado "password" e "old_password"
+com isso, vamos usar o compare do bcryptjs para verificar se as senhas sao iguais,
+mesmo estando criptografadas no banco(compare eh p isso), e se o old_password bater
+com o password cadastrado no banco, entao vamos fazer o update do password passando 
+o novo password.
+
+//pegando o conteudo de password e old_password que veio no request(cliente)
+const { name, email, password, old_password } = request.body
+
+//verificando se a senha antiga foi passada caso o usuario passou a senha nova
+if( password && !old_password){
+            throw new AppError('voce precisa passar sua senha antiga para alterar.')
+        }
+se nao passou nem a nova nem a antiga, segue  o baile
+
+//se veio as duas senhas, vamos comparar a senha antiga com a senha cadastrada
+//usando o compare do bcryptjs. se bateu, entao iremos colocar atribuir a nova senha
+//que o usuario digitou la no banco,
+
+if(password && old_password){
+            const checkOldPassword = await compare(old_password, user.password)
+
+            if(!checkOldPassword){
+                throw new AppError('Senha errada')
+            }
+
+            user.password = await hash(password, 8)
+        }
+//e ai eh claro, adicionamos o password no database.run pois vamos
+//trocar o valor dele no baco
+await database.run(
+            `UPDATE users SET
+             name = ?, 
+             email = ?,
+             password = ?, 
+             updated_at = ? 
+             WHERE id = ?`, 
+            [user.name, user.email, user.password, new Date(), id]
+        )
+
+
+-------------------
+sobre a data, estavamos usando do js, mas fica toda errada...
+podemos usar a linguagem do sql, usar o metodo de la:
+-funcao do proprio banco de dados
+
+await database.run(
+        `UPDATE users SET
+        name = ?, 
+        email = ?,
+        password = ?, 
+        updated_at = DATETIME('now')
+        WHERE id = ?`, 
+    [user.name, user.email, user.password, id]
+)
+
+validacao para, caso o nome e email nao sejam passados, 
+eles nao fiquem NULL
+gera o codigo sql de acordo com o banco que quisermos
+
+
+
+
+________________________________________________________________
+iremos ver sobre o Knexjs, que eh uma biblioteca pra gente poder escrever o codigo
+sql de forma mais facil, legivel, e de modo que, caso a gente troque de banco de dados,
+troque o sql por postgree ou mysql por exemplo, nois nao precisemos adaptar toda
+a linguagem utilizada, basta modificar o arquivo do knex para suportar o banco de dados
+diferente, e pronto, a gente meio que nao so facilitou a escrita para a manipulacao de 
+dados com sql, como tbm fizemos de uma forma "unificada", sendo assim, aquele codigo
+ira funcionar tanto para sqlite quanto para qlqr outro banco que quisermos configurar
+ali no arquivozinho do knexjs
+
+faremos o codigo com o query builder, e ele fara o codigo sql praquele banco que
+quisermos.
