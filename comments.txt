@@ -475,3 +475,333 @@ ali no arquivozinho do knexjs
 
 faremos o codigo com o query builder, e ele fara o codigo sql praquele banco que
 quisermos.
+
+____________________________________
+npm install knex --save
+npx knex init
+
+knexfile.js
+configuracao - qual eh o banco de dados -sqlite, ql tipo de banco de dados vms usar
+conexao - filename - em q lugar esta o arquivo do banco (path)
+
+const path = require('path')
+
+module.exports = {
+  development: {
+    client: 'sqlite3',
+    connection: {
+      filename: path.resolve(__dirname, 'src', 'database', 'database.db')
+    },
+    useNullAsDefault: true
+  },
+};
+
+agora vamos usar essas configuracoes para que o knex se conecte com nossa base de dados
+
+src/database/knex/index.js
+const config = require('../../../knexfile')
+const knex = require('knex')
+
+const connection = knex(config.development)
+
+module.exports = connection
+
+-pronto, fizemos a configuracao e conexao do knex com nosso banco
+
+________________________________________________________________
+migrations
+versionar a base de dados - tipo git - eh esse proposito pro banco de dados. la no banco eh criado a tabela, 
+e todo o historico de acoes q fizemos na nossa base de dados
+eh bom pra escalabilidade e seguranca do projeto
+
+UP - criar ou alterar algo no banco de dados
+DOWN - desfazer algo feito pela migration
+
+ou seja, a gente vai isolando as regras, logicas em cada migrations.
+se eu faco uma migraton que altera um campo e da ruim, podemos desfazer.
+
+configurando as migrations do knex
+migration: {
+      directory: path.resolve(__dirname, 'src', 'database', 'knex', 'migrations')
+    }
+
+no caso das migrations do sqlite, nois fizemos manualmente.
+com knex, ele mesmo gerencia
+
+npx knex migrate:make createNotes
+com isso, vai criar o arquivo na pasta migrations la na pasta knex
+
+//fazer isso no arquivo gerado:
+exports.up = knex => knex.schema.createTable('notes', table =>{
+    table.increments('id')
+    table.text('title')
+    table.text('descriptions')
+    //criando um campo do tipo inteiro chamado userid, falando que
+    //esse campo faz uma referencia ao campo id da table users
+    //dessa forma, estando vinculado, nem vai dar p criar nota sem
+    //um id de users.
+    table.integer('user_id').references('id').inTable('users')
+
+    table.timestamp('created_at').default(knex.fn.now())
+    table.timestamp('updated_at').default(knex.fn.now())
+});
+
+
+exports.down = knex => knex.schema.dropTable('notes');
+
+Qual o beneficio disso? alem de nao estarmos usando sql puro, assim como fizemos no caso do sqlite, 
+nois fizemos tudo com base na orm, e vai ser criado INDEPENDENTEMENTE do banco pedido.
+
+vamos rodar isso pra criar as coisas no banco?
+
+npx knex migrate:latest
+
+fazendo scripot p rodar esse negocio:
+ "scripts": {
+    "start": "node ./src/server.js",
+    "dev": "nodemon ./src/server.js",
+    "migrate": "knex migrate:latest"
+  },
+
+  ____________________________________
+  npm - node package manager - gerenciador de pacotes padrao do node
+  eh utilizado p instalar blibioteca, pacotes, modulos, etc
+  executar script e pacotes instalados
+
+  e o npx? node package execute
+
+  eh um executador
+  com ele, conseguimos exectar qualquer pacote sem que ele esteja instalado
+
+  A CHAVE ESTRANGEIRA SEMPRE EH FEITA EM OUTRA TABELA
+
+  ____________________________________
+  migrations p tags
+  exports.up = knex => knex.schema.createTable('tags', table =>{
+    table.increments('id')
+    table.text('name').notNullable()
+    //se deletar a nota, automaticamente, de forma cascata, vai ser deletada a tag
+    table.integer('note_id').references('id').inTable('notes').onDelete('CASCADE')
+    table.integer('user_id').references('id').inTable('users')
+
+});
+
+
+exports.down = knex => knex.schema.dropTable('tags');
+______________
+pros links:
+
+exports.up = knex => knex.schema.createTable('notes', table =>{
+    table.increments('id')
+    table.text('title')
+    table.text('descriptions')
+    table.integer('user_id').references('id').inTable('users')
+
+    table.timestamp('created_at').default(knex.fn.now())
+    table.timestamp('updated_at').default(knex.fn.now())
+});
+
+
+exports.down = knex => knex.schema.dropTable('notes');
+
+npm run migrate (knex migrate:latest no script)
+> knex migrate:latest
+
+Using environment: development
+Batch 2 run: 2 migrations
+
+AGORA QUE FIZEMOS AS MIGRATIONS E O KNEX FEZ TODAS AS TABELINHAS LA PRO SQLITE, 
+NOIS PODEMOS VER LA NO BEEKEEPER, ~VIEW STRUCTURE~, PODEMOS VER AS RELACOES,
+NO DE TAGS POR EXEMPLO, la vai ter as relacoes, userid e noteid. nas tags, como
+colocamos pra ter efeito cascade ao deletar uma nota, entao aparece la, onDelete(no beekeeper)
+ao inves de NO ACTIONS<, aparece CASCADE.
+
+obs: no sqlite, esse bagulho de cascata eh desabilitado por padrao, entao pra ativar ele:
+
+________________________________________________
+na hora de cadastrar uma nota, vamos fazer um esquema para, primeiro cadastrar a nota,
+depois cadastrar as tags e links dessa nota usando o id dessa primeira nota criada
+como chave esrangeira. 
+
+//cadastrando a nota e recuperando o id daquela nota
+        const [note_id] = await knex('notes').insert({
+            title, 
+            descriptions, 
+            user_id
+        })
+
+//criando cada link com o note_id
+const linksInsert = links.map(link => {
+            return {
+                note_id,
+                url: link
+            }
+        })
+
+//cadastrando na tabela linkds
+ await knex('links').insert(linksInsert)
+
+ ____________________________________
+ mostrar a nota na tela (get)
+
+//a rota chama o .show()
+ notesRouter.get('/:id', notesControllers.show)
+
+//pegamos o id q veio na url(param)
+//fazemos o select da nota com o where
+async show(request, response){
+        const { id }= request.params
+
+        const note = await knex('notes').where({id}).first()
+
+        return response.json(note)
+    }
+
+return response.json(note) 
+fica assim:
+
+{
+	"id": 1,
+	"title": "Introducao ao nodejs",
+	"descriptions": "aqui eh a description",
+	"user_id": 5,
+	"created_at": "2024-02-20 03:17:47",
+	"updated_at": "2024-02-20 03:17:47"
+}
+
+return response.json({note})
+fica assim:
+
+{
+	"note": {
+		"id": 1,
+		"title": "Introducao ao nodejs",
+		"descriptions": "aqui eh a description",
+		"user_id": 5,
+		"created_at": "2024-02-20 03:17:47",
+		"updated_at": "2024-02-20 03:17:47"
+	}
+}
+
+
+//depois de selecionar a nota
+        const note = await knex('notes').where({id}).first()
+        //pegar as tags onde a nota_id delas sejam iguais ao id do param
+        const tags = await knex('tags').where({note_id: id}).orderBy('name')
+        const links = await knex('links').where({note_id: id}).orderBy('created_at')
+
+
+
+return response.json({note, tags, links}):
+
+{
+  "note": { /* ... */ },
+  "tags": [ /* ... */ ],
+  "links": [ /* ... */ ]
+}
+
+return response.json({...note, tags, links}):
+
+{
+  "id": 8,
+  "title": "title",
+  "descriptions": "descriptions",
+  "user_id": 6,
+  "created_at": "2024-02-20 04:53:57",
+  "updated_at": "2024-02-20 04:53:57",
+  "tags": [ /* ... */ ],
+  "links": [ /* ... */ ]
+}
+
+
+________________________________________________
+deletando uma nota:
+
+notesRouter.delete('/:id', notesControllers.delete)
+
+async delete(request, response){
+        const { id }= request.params
+
+        const note = await knex('notes').where({id}).delete()
+
+        return response.json()
+    }
+    eh ai que entra aquele efeito cascata, se colocarmos nessa rota o 
+    id 9 por exemplo, alem da nota de id 9 deletar, tbm vai deletar
+    as tags e links relacionadas a ela.
+
+________________________________________________
+listando todas as notas de um usuario.
+dessa vez, vamos capturar o user_id pela query ao inves do param.
+
+async index(request, response){
+//pegando o id do usuario pela query
+        const { user_id } = request.query
+        //pegando todas as notas onde o user_id = user_id
+        const notes = await knex('notes')
+        .where({ user_id }).orderBy('title')
+
+        return response.json(notes)
+    }
+
+notesRouter.post('/:user_id', notesControllers.create)
+notesRouter.get('/:id', notesControllers.show)
+//a rota. (n tem param pq o user_id ta na query)
+notesRouter.get('/', notesControllers.index)
+notesRouter.delete('/:id', notesControllers.delete)
+
+no imnsonia, na hora de fazer o get, tem que colocar o nome da query e o valor
+na url, no fim das contas, fica assim: ?user_id=6
+
+________________________________________________
+buscando notas por uma palavra chave(title)
+
+async index(request, response){
+//title aqui tmb
+        const { title, user_id } = request.query
+        const notes = await knex('notes')
+        .where({ user_id })
+//com isso, procura por title AONDE tiver o title antes ou depois (os %)
+        .whereLike('title', `%${title}%`)
+        .orderBy('title')
+
+        return response.json(notes)
+    }
+
+    //eai, pra testar no inmsonia, so colocar mais um parametro query
+    //chamado title, e o valor no qual vc esta querendo buscar a palavrinha chave
+
+________________________________________________
+exibir as tags:
+//pega a tag na query tbm (colocando pra ficar separado entre virgulas)
+const { title, user_id, tags} = request.query
+
+//faz isso para separar por viruglas e separar palavra por palavra numa array
+const filterTags = tags.split(',').map(tag => tag.trim())
+
+//eai, vamos exibir, por enquanto apenas as tags mesmo (nao queremos isso)
+//exibir as tags onde o campo "name" delas contem alguma coisa do filterTags,
+//que eh o array das querys que veio da request.query
+notes = await knex('tags').whereIn('name', filterTags)
+
+ok, exibimos as tags. mas queremos a NOTA vinculada a essa tag.
+
+INNER join
+- ora exibir duas tabelas (nao eh mistura-las, apenas mostrar as duas)
+- se eu quero fazer isso com a tabela tags e notas, o inner join vai
+verificar quais registros em comum essas tabelas tem.
+
+por exemplo, a tabela notas tem seu id, e a tabela tags tem note_id
+usar innerjoin pra averiguar isso
+
+//pegar as tags
+notes = await knex('tags')
+//selecione esses valores da tabela notes:
+.select(['notes.id', 'notes.title', 'notes.user_id'])
+//apenas as notas em que o user_id delas sejam iguais ao user_id da query
+.where('notes.user_id', user_id)
+//buscar as tags pelo "name", buscar as tags que aparecem no array filterTags
+.whereIn('name', filterTags)
+//juntando as tabelas com inner join - com os dados que se referenciam
+(um eh primary key e o outro foreign key)
+.innerJoin('notes', 'notes.id', 'tags.note_id')
