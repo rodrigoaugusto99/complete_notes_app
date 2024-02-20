@@ -85,9 +85,27 @@ class NotesController{
         .whereLike('title', `%${title}%`)
         .orderBy('title')
         }
-        
+//pegando todas as tags desse usuario
+        const userTags = await knex('tags').where({user_id})
 
-        return response.json(notes)
+        //percorrendo as notas do usuario, e em cada iteracao, percorrer todas 
+        //as tags pra ver ha(filter) uma tag que tem o note_id igual ao note_id 
+        //da aquele note.
+
+
+        const notesWithTags = notes.map(note => {
+            const noteTags = userTags.filter(tag => tag.note_id === note_id)
+//se filtrou, se tal tag corresponde a tal nota, entao taca-lhe no return 
+//pra retornar a nota inteira + todas essas tags filtradas
+            return {
+                ...note,
+                tags: noteTags
+            }
+        })
+        
+//agora, inves de retornar so as notas, podemos retornar esse ultimo filtro, que sao
+//as notas E as respectivas tags.
+        return response.json(notesWithTags)
     }
 }
 

@@ -805,3 +805,112 @@ notes = await knex('tags')
 //juntando as tabelas com inner join - com os dados que se referenciam
 (um eh primary key e o outro foreign key)
 .innerJoin('notes', 'notes.id', 'tags.note_id')
+
+
+____________________________________
+____________________________________
+como funciona o .map
+
+List tags = [{x, y}, {a, b}, {r, d}]
+eh uma lista de objetos.
+
+podemos usar um map pra fazer um outro array A PARTIR desse array tags
+
+newArray = tags.map(x => {
+    return a
+})
+
+nesse caso, ficaria uma lista assim [a, a, a]
+
+newArray = tags.map(x => {
+    return {
+        'letter': a
+    }
+})
+
+nesse caso, ficaria uma lista assim [{'letter': a}, {'letter': a}, {'letter': a}]
+
+newArray = tags.map(x => {
+    return {
+        ...x,
+        date: new Date()
+    }
+})
+
+nesse caso, despejariamos todo o conteudo daquele tag, e logo depois, colocamos um novo 
+elemento.
+nesse caso: [{x, y, 123455}, {a, b, 123455}, {r, d, 123455}]
+iria adicionar a nova data pra cada elemento do array, com o desespejo de todos os elementos antes
+
+
+o .filter tbm eh uma funcao que retorna, funciona assim:
+
+List tags = [{'one':x, 'two':y}, {'one':p, 'two':t}, {'one':b, 'two':a}]
+
+const newArray = tags.filter(tag => tag.one === x)
+
+nesse caso, vai retornar isso:
+[{'one':x, 'two':y}]
+
+___________________________________________________
+exibindo as tags referentes aquela nota
+
+const filterTags = tags.split(',').map(tag => tag.trim())
+            //com essa logica, fica  -[ 'node', 'express' ]
+            notes = await knex('tags')
+            .select(['notes.id', 'notes.title', 'notes.user_id'])
+            .where('notes.user_id', user_id)
+            .whereLike('notes.title', `%${title}%`)
+            .whereIn('name', filterTags)
+            .innerJoin('notes', 'notes.id', 'tags.note_id')
+
+//a partir disso, vamos exibir tambem as tags.
+
+//vamos pegar todas as tags com o campo user_id = user_id da request.query
+const userTags = await knex('tags').where({user_id})
+
+//agora vamos ver quais notas contem essas tags
+
+//pegando todas as tags desse usuario
+        const userTags = await knex('tags').where({user_id})
+
+        //percorrendo as notas do usuario, e em cada iteracao, percorrer todas 
+        //as tags pra ver ha(filter) uma tag que tem o note_id igual ao note_id 
+        //da aquele note.
+
+
+        const notesWithTags = notes.map(note => {
+            const noteTags = userTags.filter(tag => tag.note_id === note_id)
+//se filtrou, se tal tag corresponde a tal nota, entao taca-lhe no return 
+//pra retornar a nota inteira + todas essas tags filtradas
+            return {
+                ...note,
+                tags: noteTags
+            }
+        })
+        
+//agora, inves de retornar so as notas, podemos retornar esse ultimo filtro, que sao
+//as notas E as respectivas tags.
+        return response.json(notesWithTags)
+
+        ________________________________________________________________
+
+        exibindo as tags
+
+        controller pra tags:
+
+        const knex = require('../database/knex')
+
+class TagsController{
+    async index(request, response){
+        //pega o id do usuario
+        const {user_id} = request.params
+//pega as tags que tem user_id = user_id
+        const tags = await knex('tags')
+        .where({user_id})
+        
+        return response.json(tags)
+    }
+}
+
+module.exports = TagsController
