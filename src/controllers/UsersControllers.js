@@ -28,12 +28,23 @@ class UsersControllers {
 
     async update(request, response){
         const { name, email, password, old_password } = request.body
-        const { id } = request.params
+        /*
+        aqui nois nao vamos mais pegar o id do usuario pelo parametro da url
+        e sim, vamos pegar pelo middleware. lembra que la no middleware a gente
+        depois de capturar o token com aquele verify, nois CRIAMOS uma propriedade
+        dentro de (request)?
 
+        request.user = {
+            id: Number(user_id)
+        }
+        entao agora, pra pegar o id do usuario, eh so acessar o id do user do request.
+         */
+        //const { id } = request.params
+        const user_id  = request.user.id
         const database = await sqliteConnection()
         //user = user em json
-        const user = await database.get('SELECT * FROM users WHERE id = (?)', [id])
-        
+        const user = await database.get('SELECT * FROM users WHERE id = (?)', [user_id])
+        console.log(user)
         if(!user){
             throw new AppError('Usuario nao encontrado!!')
         }
@@ -86,7 +97,7 @@ class UsersControllers {
              password = ?, 
              updated_at = DATETIME('now')
              WHERE id = ?`, 
-            [user.name, user.email, user.password, id]
+            [user.name, user.email, user.password, user_id]
         )
 
         return response.json()

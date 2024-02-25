@@ -13,6 +13,9 @@ function ensureAuthenticated(request, response, next){
     //dentro do header tem o token, vamos tirar o espaco que existe la
    // Bare xxxxx
    //nao queremos a parte do bare, entao pode deixar vazio ali [,]
+
+   //o que estamos dando split eh o _.USER_TOKEN que estamos passando la com o imnsonia
+   //e com ele, tamo pegando a parte com Bearer xxx.., pegando so o id e tirando o espaco 
     const [, token] = authHeader.split(" ")
 
     try{
@@ -29,6 +32,7 @@ function ensureAuthenticated(request, response, next){
         request.user = {
             id: Number(user_id)
         }
+        console.log(request.user.id)
 //se td der certo, chamar a proxima funcao(pois esse middleware interceptou no meio)
         return next()
     }catch{
@@ -37,3 +41,11 @@ function ensureAuthenticated(request, response, next){
 }
 
 module.exports = ensureAuthenticated
+
+/*
+la no metodo put, ao passar esse middleware, agora a rota put(/users/id) nao
+vai ser mais reconhecida, vai ser so put(/users) mesmo. Porem, como passamos 
+o token nessa requisicao entao?
+
+no 
+ */

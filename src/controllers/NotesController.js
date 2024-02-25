@@ -5,7 +5,9 @@ class NotesController{
         //dados do corpo
         const {title, descriptions, tags, links} = request.body
         //dados do params(id)
-        const { user_id } = request.params
+        //const { user_id } = request.params
+        //PEGANDO PELO REQUEST.USER.ID APOS O MIDDLEWARE
+        const user_id  = request.user.id
 
         //cadastrando a nota e recuperando o id daquela nota
         const [note_id] = await knex('notes').insert({
@@ -63,7 +65,11 @@ class NotesController{
 
     async index(request, response){
 
-        const { title, user_id, tags} = request.query
+        //const { title, user_id, tags} = request.query
+        const { title, tags} = request.query
+        //NAO VAMOS MAIS PEGAR DA QUERY
+        //PEGANDO PELO REQUEST.USER.ID APOS O MIDDLEWARE
+        const user_id  = request.user.id
 
         let notes
 
