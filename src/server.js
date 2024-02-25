@@ -5,6 +5,7 @@ const migrationsRun = require('./database/sqlite/migrations')
 const express = require("express")
 const routes = require("./routes")
 const AppError = require("./utils/AppError")
+const uploadConfig = require("./configs/upload")
 
 // database()
 migrationsRun()
@@ -15,6 +16,7 @@ migrationsRun()
 
 const app = express()
 app.use(express.json())
+app.use('/files', express.static(uploadConfig.UPLOADS_FOLDER))
 
 //1 - vai nas rotas - use essas rotas
 app.use(routes)

@@ -4,12 +4,14 @@ const uploadConfig = require('../configs/upload')
 
 //importando o cotroller - so o nome da pasta, sem a extensao
 const UsersControllers = require('../controllers/UsersControllers')
+const UsersAvatarControllers = require('../controllers/UserAvatarController')
 const ensureAuthenticated = require('../middlewares/ensureAuthenticated')
 
 const usersRoutes = Router()
 const upload = multer(uploadConfig.MULTER)
 
 const usersControllers = new UsersControllers()
+const usersAvatarControllers = new UsersAvatarControllers()
 
 
 //3 - estou na raiz, nao tem nada mais pra frente depois do /users, entao fica apenas /
@@ -21,10 +23,11 @@ usersRoutes.post('/', usersControllers.create)
 //nao precisa mais do id, pois vamos pegar pelo middleware
 //usersRouter.put('/:id',  usersControllers.update)
 usersRoutes.put('/', ensureAuthenticated, usersControllers.update)
-usersRoutes.patch('/avatar', ensureAuthenticated, upload.single('avatar'), (request, response) => {
-    console.log(request.file.filename)
-    response.json()
-})
+// usersRoutes.patch('/avatar', ensureAuthenticated, upload.single('avatar'), (request, response) => {
+//     console.log(request.file.filename)
+//     response.json()
+// })
+usersRoutes.patch('/avatar', ensureAuthenticated, upload.single('avatar'), usersAvatarControllers.update)
 
 module.exports = usersRoutes
 
