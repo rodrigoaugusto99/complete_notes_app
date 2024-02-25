@@ -3,6 +3,8 @@ const knex = require('../database/knex')
 //pra lidar com excecoes
 const AppError = require('../utils/AppError')
 
+const { compare } = require('bcryptjs')
+
 class SessionsController {
     async create(request, response){
         //esse teste com log retorna no terminal
@@ -17,6 +19,12 @@ class SessionsController {
         const user = await knex('users').where({email}).first()
 
         if(!user){
+            throw new AppError('email ou senha incorretos', 401)
+        }
+//comparando a senha que o usuario digitou com a senha cadastrada no banco(com o usuario pego no banco)
+        const passwordMatched = await compare(password, user.password)
+
+        if(!passwordMatched){
             throw new AppError('email ou senha incorretos', 401)
         }
 
