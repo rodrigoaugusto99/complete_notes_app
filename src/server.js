@@ -2,6 +2,7 @@ require('express-async-errors')
 //const database = require('./database/sqlite')
 const migrationsRun = require('./database/sqlite/migrations')
 
+const cors = require('cors')
 const express = require("express")
 const routes = require("./routes")
 const AppError = require("./utils/AppError")
@@ -15,6 +16,7 @@ migrationsRun()
 //e entao ao ir nas routes, vai la onde ta armazenadas todas as rotas (no index)
 
 const app = express()
+app.use(cors())
 app.use(express.json())
 app.use('/files', express.static(uploadConfig.UPLOADS_FOLDER))
 
