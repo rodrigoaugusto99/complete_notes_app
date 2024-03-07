@@ -3,7 +3,7 @@ const knex = require('../database/knex')
 class NotesController{
     async create(request, response){
         //dados do corpo
-        const {title, descriptions, tags, links} = request.body
+        const {title, description, tags, links} = request.body
         //dados do params(id)
         //const { user_id } = request.params
         //PEGANDO PELO REQUEST.USER.ID APOS O MIDDLEWARE
@@ -12,7 +12,7 @@ class NotesController{
         //cadastrando a nota e recuperando o id daquela nota
         const [note_id] = await knex('notes').insert({
             title, 
-            descriptions, 
+            description, 
             user_id
         })
 
