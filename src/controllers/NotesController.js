@@ -82,6 +82,7 @@ class NotesController{
             .where('notes.user_id', user_id)
             .whereLike('notes.title', `%${title}%`)
             .whereIn('name', filterTags)
+            .groupBy('notes.id')
             .innerJoin('notes', 'notes.id', 'tags.note_id')
 
             console.log(filterTags)
@@ -100,7 +101,7 @@ class NotesController{
 
 
         const notesWithTags = notes.map(note => {
-            const noteTags = userTags.filter(tag => tag.note_id === note_id)
+            const noteTags = userTags.filter(tag => tag.note_id === note.id)
 //se filtrou, se tal tag corresponde a tal nota, entao taca-lhe no return 
 //pra retornar a nota inteira + todas essas tags filtradas
             return {
