@@ -1,4 +1,5 @@
 require('express-async-errors')
+require('dotenv/config')
 //const database = require('./database/sqlite')
 const migrationsRun = require('./database/sqlite/migrations')
 
@@ -55,6 +56,7 @@ app.use((error, request, response, next) => {
     
 })
 
-
-const PORT = 3333
+//caso  o dev nao setar variaveis de ambiente, fazemos entao essa precaucao de ||
+//3333 pois a 3000 geralmente eh usada pelo react
+const PORT = process.env.SERVER_PORT || 3333
 app.listen(PORT, () => console.log(`rodando no ${PORT}`))
