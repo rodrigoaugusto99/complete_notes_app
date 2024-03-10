@@ -36,7 +36,9 @@ quem vai usar essa classe eh quem diz qual banco sera utilizado.*/
 
         const hashedPassword = await hash(password, 8)
 
-        await this.userRepository.createUser({name, email, hashedPassword})
+        const userCreated = await this.userRepository.createUser({name, email, hashedPassword})
+        //pegando o retorno, que no caso eh um objeto apenas com o id por enquant
+        return userCreated
     }
 }
 
